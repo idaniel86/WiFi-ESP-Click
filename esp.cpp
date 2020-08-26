@@ -33,7 +33,7 @@
 ESP ESP::m_instance;
 
 // thread context
-THD_WORKING_AREA(ESP::m_thread_ctx, 256);
+THD_WORKING_AREA(ESP::m_thread_ctx, 512);
 
 const ESP::RespMsg ESP::m_respMsg[] = {
 	{ "OK", MSG_OK },
@@ -431,7 +431,7 @@ msg_t ESP::wifiConnect(const char* ssid, const char* pwd, bool defaultCfg)
 	msg_t errorCode = MSG_FAIL;
 	msg_t ret;
 
-	static auto stationConnectCb = [this, &errorCode]() {
+	auto stationConnectCb = [this, &errorCode]() {
 		char *saveptr;
 
 		if (strncmp(this->m_buffer, "+CWJAP:", strlen("+CWJAP:")) == 0) {

@@ -155,7 +155,7 @@ private:
 	static const RespMsg m_respMsg[];
 
 	static ESP m_instance;
-	static THD_WORKING_AREA(m_thread_ctx, 256);
+	static THD_WORKING_AREA(m_thread_ctx, 512);
 	SerialDriver* m_serial;
 	ioline_t m_rstPin;
 	thread_t* m_thread;
