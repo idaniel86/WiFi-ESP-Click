@@ -568,7 +568,7 @@ msg_t ESP::ipDisconnect(uint8_t linkId)
 
 size_t ESP::ipSendData(uint8_t linkId, const uint8_t *buf, size_t n)
 {
-	DEBUG_PRINT("linkId = %u", linkId);
+//	DEBUG_PRINT("linkId = %u", linkId);
 
 	msg_t ret;
 	size_t size = 0;
@@ -621,7 +621,7 @@ size_t ESP::ipSendData(uint8_t linkId, const uint8_t *buf, size_t n)
 
 size_t ESP::ipReceiveData(uint8_t linkId, uint8_t *buf, size_t n, sysinterval_t timeout)
 {
-	DEBUG_PRINT("linkId = %u, timeout = %lu", linkId, timeout);
+//	DEBUG_PRINT("linkId = %u, timeout = %lu", linkId, timeout);
 
 	return iqReadTimeout(&m_channels[linkId].iqueue, buf, n, timeout);
 }
