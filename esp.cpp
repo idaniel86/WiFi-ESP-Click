@@ -566,6 +566,29 @@ msg_t ESP::ipDisconnect(uint8_t linkId)
 			"AT+CIPCLOSE=%u\r\n", linkId);
 }
 
+bool ESP::ipSendDataHeader(uint8_t linkId, size_t n)
+{
+	msg_t ret;
+
+	// send header
+	chprintf((BaseSequentialStream *)m_serial, "AT+CIPSEND=%u,%u\r\n", linkId, n);
+
+	do {
+		ret = readline((1 << MSG_OK) | (1 << MSG_ERROR), nullptr, RESP_TIMEOUT);
+	} while (ret == MSG_LINE);
+
+	if (ret != MSG_OK)
+		return false;
+
+	// wait for prompt
+	memset(m_buffer, 0, BUFFER_SIZE);
+	ret = chnReadTimeout(m_serial, (uint8_t*)m_buffer, strlen("> "), RESP_TIMEOUT);
+	if (strcmp(m_buffer, "> ") != 0)
+		return false;
+
+	return true;
+}
+
 size_t ESP::ipSendData(uint8_t linkId, const uint8_t *buf, size_t n)
 {
 //	DEBUG_PRINT("linkId = %u", linkId);
@@ -576,39 +599,21 @@ size_t ESP::ipSendData(uint8_t linkId, const uint8_t *buf, size_t n)
 	chMtxLock(&m_mutex);
 
 	while (n > 0) {
-		size_t bytesToSend = (n > CHN_MAX_BUFFER_SIZE) ? CHN_MAX_BUFFER_SIZE : n;
-
 		// send header
-		chprintf((BaseSequentialStream *)m_serial, "AT+CIPSEND=%u,%u\r\n", linkId, bytesToSend);
-
-		do {
-			ret = readline((1 << MSG_OK) | (1 << MSG_ERROR), nullptr, RESP_TIMEOUT);
-		} while (ret == MSG_LINE);
-
-		if (ret != MSG_OK) {
-			chMtxUnlock(&m_mutex);
-			return size;
-		}
-
-		// wait for prompt
-		memset(m_buffer, 0, BUFFER_SIZE);
-		ret = chnReadTimeout(m_serial, (uint8_t*)m_buffer, strlen("> "), RESP_TIMEOUT);
-		if (strcmp(m_buffer, "> ") != 0) {
-			chMtxUnlock(&m_mutex);
-			return size;
-		}
+		size_t bytesToSend = (n > CHN_MAX_BUFFER_SIZE) ? CHN_MAX_BUFFER_SIZE : n;
+		if (!ipSendDataHeader(linkId, bytesToSend))
+			break;
 
 		// send data
-		sdWrite(m_serial, buf, n);
+		if (sdWrite(m_serial, buf, n) != n)
+			break;
 
 		do {
 			ret = readline((1 << MSG_OK) | (1 << MSG_ERROR), nullptr, RESP_TIMEOUT);
 		} while (ret == MSG_LINE);
 
-		if (ret != MSG_OK) {
-			chMtxUnlock(&m_mutex);
-			return size;
-		}
+		if (ret != MSG_OK)
+			break;
 
 		size += bytesToSend;
 		n -= bytesToSend;

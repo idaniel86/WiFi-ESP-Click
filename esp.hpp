@@ -247,6 +247,16 @@ private:
 	 */
 	msg_t ipSetSSLBufferSize(uint16_t size = 4096);
 
+	/**
+	 * @brief	Send data header.
+	 *
+	 * @param[in] linkId	ID of the connection (0~4), for multiple connections
+	 * @param[in] n			the maximum amount of data to be transferred
+	 *
+	 * @return				Operation result.
+	 */
+	bool ipSendDataHeader(uint8_t linkId, size_t n);
+
 public:
 	/** @brief	Returns static instance of power manager class. */
 	static ESP& instance() { return m_instance; }
@@ -505,6 +515,47 @@ public:
 	 * @return 				The number of bytes transferred.
 	 */
 	size_t ipSendData(uint8_t linkId, const uint8_t *buf, size_t n);
+
+	/**
+	 * @brief	Sends data using iterator.
+	 *
+	 * @param[in] linkId	ID of the connection (0~4), for multiple connections
+	 * @param[in] first		input iterator first element
+	 * @param[in] last		input iterator last element
+	 *
+	 * @return				The current iterator position.
+	 */
+	template <typename Iterator>
+	Iterator ipSendData(uint8_t linkId, const Iterator& first, const Iterator& last) {
+		Iterator it = first;
+		size_t n = std::distance(first, last);
+		msg_t ret;
+
+		chMtxLock(&m_mutex);
+
+		while (n > 0) {
+			// send header
+			size_t bytesToSend = (n > CHN_MAX_BUFFER_SIZE) ? CHN_MAX_BUFFER_SIZE : n;
+			if (!ipSendDataHeader(linkId, bytesToSend))
+				break;
+
+			// send data
+			while (bytesToSend-- && sdPut(m_serial, *it++) != MSG_RESET);
+
+			do {
+				ret = readline((1 << MSG_OK) | (1 << MSG_ERROR), nullptr, RESP_TIMEOUT);
+			} while (ret == MSG_LINE);
+
+			if (ret != MSG_OK)
+				break;
+
+			n = std::distance(it, last);
+		}
+
+		chMtxUnlock(&m_mutex);
+
+		return it;
+	}
 
 	/**
 	 * @brief	Reads data with timeout.
