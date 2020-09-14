@@ -631,6 +631,11 @@ size_t ESP::ipReceiveData(uint8_t linkId, uint8_t *buf, size_t n, sysinterval_t 
 	return iqReadTimeout(&m_channels[linkId].iqueue, buf, n, timeout);
 }
 
+msg_t ESP::ipReceiveData(uint8_t linkId, sysinterval_t timeout)
+{
+	return iqGetTimeout(&m_channels[linkId].iqueue, timeout);
+}
+
 msg_t ESP::ipCreateServer(uint16_t localPort)
 {
 	DEBUG_PRINT("localPort = %u", localPort);

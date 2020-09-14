@@ -573,6 +573,21 @@ public:
 	size_t ipReceiveData(uint8_t linkId, uint8_t *buf, size_t n, sysinterval_t timeout);
 
 	/**
+	 * @brief	Reads byte with timeout.
+	 *
+	 * @param[in] linkId	ID of the connection (0~4), for multiple connections
+	 * @param[in] timeout	the number of ticks before the operation timeouts,
+	 * 						the following special values are allowed:
+	 * 						- @a TIME_IMMEDIATE immediate timeout.
+	 * 						- @a TIME_INFINITE no timeout.
+	 * 						.
+	 * @return				A byte value from the queue.
+	 * @retval MSG_TIMEOUT	if the specified time expired.
+	 * @retval MSG_RESET	if the queue has been reset.
+	 */
+	msg_t ipReceiveData(uint8_t linkId, sysinterval_t timeout);
+
+	/**
 	 * @brief	Creates TCP server.
 	 *
 	 * @param[in] localPort		local port number
