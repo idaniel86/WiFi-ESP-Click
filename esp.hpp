@@ -610,6 +610,22 @@ public:
 	 * @retval MSG_RESET	if the channel associated queue (if any) has been reset.
 	 */
 	msg_t ipDeleteServer();
+
+	/**
+	 * @brief	Gets the Local IP Address.
+	 *
+	 * @param[in] apIPAddr		IP address of the ESP8266 SoftAP
+	 * @param[in] apMACAddr		MAC address of the ESP8266 SoftAP
+	 * @param[in] staIPAddr		IP address of the ESP8266 Station
+	 * @param[in] staMACAddr	MAC address of the ESP8266 Station
+	 *
+	 * @return 				Operation result.
+	 * @retval MSG_OK		on success.
+	 * @retval MSG_ERROR	if an error occurred.
+	 * @retval MSG_TIMEOUT	if the response @a RESP_TIMEOUT time expired.
+	 * @retval MSG_RESET	if the channel associated queue (if any) has been reset.
+	 */
+	msg_t ipGetAddres(std::string& apIPAddr, std::string& apMACAddr, std::string& staIPAddr, std::string& staMACAddr);
 };
 
 #endif /* ESP_HPP_ */

@@ -653,3 +653,35 @@ msg_t ESP::ipDeleteServer()
 			nullptr, RESP_TIMEOUT,
 			"AT+CIPSERVER=0\r\n");
 }
+
+msg_t ESP::ipGetAddres(std::string& apIPAddr, std::string& apMACAddr, std::string& staIPAddr, std::string& staMACAddr)
+{
+	DEBUG_PRINT("");
+
+	auto getAddressCb = [this, &apIPAddr, &apMACAddr, &staIPAddr, &staMACAddr]() {
+		struct KeyValuePair {
+			const char *key;
+			std::string& value;
+		} pair[] = {
+				{ "+CIFSR:APIP", apIPAddr },
+				{ "+CIFSR:APMAC", apMACAddr },
+				{ "+CIFSR:STAIP", apIPAddr },
+				{ "+CIFSR:STAMAC", apMACAddr },
+		};
+
+		for (size_t i = 0; i < sizeof(pair) / sizeof(KeyValuePair); i++) {
+			if (strncmp(this->m_buffer, pair[i].key, strlen(pair[i].key)) == 0) {
+				char *saveptr = this->m_buffer + strlen(pair[i].key);
+				const char *pstart = strtok_r(saveptr, ",", &saveptr);
+				const char *pend;
+				if ((pstart != NULL) && ((pstart = strchr(pstart, '"')) != NULL) && ((pend = strrchr(pstart, '"')) != NULL) && (pstart != pend))
+					pair[i].value = std::string(++pstart, pend);
+				break;
+			}
+		}
+	};
+
+	return command((1 << MSG_OK) | (1 << MSG_ERROR),
+			getAddressCb, RESP_TIMEOUT,
+			"AT+CIFSR\r\n");
+}
