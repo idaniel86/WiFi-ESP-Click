@@ -685,3 +685,12 @@ msg_t ESP::ipGetAddres(std::string& apIPAddr, std::string& apMACAddr, std::strin
 			getAddressCb, RESP_TIMEOUT,
 			"AT+CIFSR\r\n");
 }
+
+msg_t ESP::ipSetServerMaxConnections(uint8_t maxConn)
+{
+	DEBUG_PRINT("maxConn = %u", maxConn);
+
+	return command((1 << MSG_OK) | (1 << MSG_ERROR),
+			nullptr, RESP_TIMEOUT,
+			"AT+CIPSERVERMAXCONN=%u\r\n", maxConn);
+}

@@ -626,6 +626,20 @@ public:
 	 * @retval MSG_RESET	if the channel associated queue (if any) has been reset.
 	 */
 	msg_t ipGetAddres(std::string& apIPAddr, std::string& apMACAddr, std::string& staIPAddr, std::string& staMACAddr);
+
+	/**
+	 * @brief	Sets the maximum connections allowed by server.
+	 *
+	 * @param[in] maxConn	the maximum number of clients allowed to connect to
+	 * 						the TCP or SSL server, range: [1, 5]
+	 *
+	 * @return 				Operation result.
+	 * @retval MSG_OK		on success.
+	 * @retval MSG_ERROR	if an error occurred.
+	 * @retval MSG_TIMEOUT	if the response @a RESP_TIMEOUT time expired.
+	 * @retval MSG_RESET	if the channel associated queue (if any) has been reset.
+	 */
+	msg_t ipSetServerMaxConnections(uint8_t maxConn);
 };
 
 #endif /* ESP_HPP_ */
