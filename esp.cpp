@@ -180,23 +180,23 @@ msg_t ESP::readline(msg_t mask, std::function<void()> cb, sysinterval_t timeout)
 
 				// checking for event messages and callback
 				if (strcmp(m_buffer, "WIFI CONNECTED") == 0) {
-					DEBUG_PRINT("wifi connected");
+					//DEBUG_PRINT("wifi connected");
 					chEvtBroadcastFlags(&m_event, WIFI_CONNECTED);
 				}
 				else if (strcmp(m_buffer, "WIFI DISCONNECT") == 0) {
-					DEBUG_PRINT("wifi disconnected");
+					//DEBUG_PRINT("wifi disconnected");
 					chEvtBroadcastFlags(&m_event, WIFI_DISCONNECTED);
 				}
 				else if (strcmp(m_buffer, "WIFI GOT IP") == 0) {
-					DEBUG_PRINT("wifi ip address assigned");
+					//DEBUG_PRINT("wifi ip address assigned");
 					chEvtBroadcastFlags(&m_event, WIFI_GOT_IP_ADDRESS);
 				}
 				else if (strstr(m_buffer, ",CONNECT") != NULL) {
-					DEBUG_PRINT("client connected");
+					//DEBUG_PRINT("client connected");
 					chEvtBroadcastFlags(&m_event, CHN_CONNECTED);
 				}
 				else if (strstr(m_buffer, ",CLOSED") != NULL) {
-					DEBUG_PRINT("client disconnected");
+					//DEBUG_PRINT("client disconnected");
 					chEvtBroadcastFlags(&m_event, CHN_DISCONNECTED);
 				}
 				else if (cb != NULL)
