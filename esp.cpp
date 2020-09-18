@@ -702,3 +702,37 @@ msg_t ESP::ipSetServerMaxConnections(uint8_t maxConn)
 			nullptr, RESP_TIMEOUT,
 			"AT+CIPSERVERMAXCONN=%u\r\n", maxConn);
 }
+
+msg_t ESP::ipSetServerTimeout(uint16_t timeout)
+{
+	DEBUG_PRINT("timeout = %u", timeout);
+
+	return command((1 << MSG_OK) | (1 << MSG_ERROR),
+			nullptr, RESP_TIMEOUT,
+			"AT+CIPSTO=%u\r\n", timeout);
+}
+
+msg_t ESP::ipGetServerTimeout(uint16_t& timeout)
+{
+	DEBUG_PRINT("");
+
+	timeout = 0;
+
+	auto getServerTimeoutCb = [this, &timeout]() {
+		char *token, *saveptr = this->m_buffer;
+
+		if ((token = strtok_r(saveptr, ":", &saveptr)) != NULL && strcmp(token, "+CIPSTO") == 0) {
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				timeout = (uint16_t)atoi(token);
+			}
+		}
+	};
+
+	msg_t ret = command((1 << MSG_OK) | (1 << MSG_ERROR),
+			getServerTimeoutCb, RESP_TIMEOUT,
+			"AT+CIPSTO?\r\n", timeout);
+	if (ret == MSG_OK) {
+		DEBUG_PRINT("timeout = %u", timeout);
+	}
+	return ret;
+}
