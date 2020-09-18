@@ -426,7 +426,27 @@ public:
 	 * @retval MSG_TIMEOUT	if the response @a RESP_TIMEOUT time expired.
 	 * @retval MSG_RESET	if the channel associated queue (if any) has been reset.
 	 */
-	msg_t wifiSetAP(const char *ssid, const char *pwd, uint8_t chn, WifiEnc enc, uint8_t maxConn, bool hidden,  bool defaultCfg = false);
+	msg_t wifiSetAP(const char *ssid, const char *pwd, uint8_t chn, WifiEnc enc, uint8_t maxConn, bool hidden, bool defaultCfg = false);
+
+	/**
+	 * @brief	Get the ESP8266 SoftAP configuration.
+	 *
+	 * @param[out] ssid			string parameter, SSID of AP
+	 * @param[out] pwd			string parameter; length of password: 8 ~ 64 bytes ASCII
+	 * @param[out] chn			channel ID
+	 * @param[out] enc			encryption method @p esp8266_wifi_enc_t
+	 * @param[out] maxConn		maximum number of stations to which ESP8266 SoftAP can be
+	 * 							connected, within the range of [1, 8]
+	 * @param[out] hidden		flag indicating if the SSID is broadcasted or not
+	 * @param[in] defaultCfg	flag indicating if store configuration in Flash
+	 *
+	 * @return 				Operation result.
+	 * @retval MSG_OK		on success.
+	 * @retval MSG_ERROR	if an error occurred.
+	 * @retval MSG_TIMEOUT	if the response @a RESP_TIMEOUT time expired.
+	 * @retval MSG_RESET	if the channel associated queue (if any) has been reset.
+	 */
+	msg_t wifiGetAP(std::string& ssid, std::string& pwd, uint8_t& chn, WifiEnc& enc, uint8_t& maxConn, bool& hidden, bool defaultCfg = false);
 
 	/**
 	 * @brief	Enables/Disables DHCP.

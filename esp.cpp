@@ -572,6 +572,63 @@ msg_t ESP::wifiSetAP(const char *ssid, const char *pwd, uint8_t chn, WifiEnc enc
 				defaultCfg ? "DEF" : "CUR", ssid, pwd, chn, enc, maxConn, hidden ? 1 : 0);
 }
 
+msg_t ESP::wifiGetAP(std::string& ssid, std::string& pwd, uint8_t& chn, WifiEnc& enc, uint8_t& maxConn, bool& hidden, bool defaultCfg)
+{
+	DEBUG_PRINT("defaultCfg = %c", defaultCfg ? 'T' : 'F');
+
+	auto getAPCb = [this, &ssid, &pwd, &chn, &enc, &maxConn, &hidden]() {
+		char *token, *saveptr = this->m_buffer;
+
+		if ((token = strtok_r(saveptr, ":", &saveptr)) != NULL && strncmp(token, "+CWSAP", strlen("+CWSAP")) == 0) {
+			// ssid
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				char *saveptr = token;
+				if ((token = strtok_r(saveptr, "\"", &saveptr)) != NULL) {
+					ssid = token;
+				}
+			}
+
+			// pwd
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				char *saveptr = token;
+				if ((token = strtok_r(saveptr, "\"", &saveptr)) != NULL) {
+					pwd = token;
+				}
+			}
+
+			// channel
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				chn = (uint8_t)atoi(token);
+			}
+
+			// encryption
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				enc = (WifiEnc)atoi(token);
+			}
+
+			// max connections
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				maxConn = (uint8_t)atoi(token);
+			}
+
+			// hidden
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				hidden = (uint8_t)atoi(token) == 1;
+			}
+		}
+	};
+
+	msg_t ret = command((1 << MSG_OK) | (1 << MSG_ERROR),
+			getAPCb, RESP_TIMEOUT,
+			"AT+CWSAP_CUR?\r\n",
+			defaultCfg ? "DEF" : "CUR");
+	if (ret == MSG_OK) {
+		DEBUG_PRINT("ssid = \"%s\", pwd = \"%s\", chn = %u, enc = %u, maxConn = %u, hidden = %c",
+				ssid.c_str(), pwd.c_str(), chn, enc, maxConn, hidden ? 'T' : 'F');
+	}
+	return ret;
+}
+
 msg_t ESP::wifiEnableDHCP(WifiMode mode, bool enable, bool defaultCfg)
 {
 	DEBUG_PRINT("mode = %u, enable = %c, defaultCfg = %c", enable ? 'T' : 'F', defaultCfg ? 'T' : 'F');
