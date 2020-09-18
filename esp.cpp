@@ -302,55 +302,53 @@ msg_t ESP::ipGetStatus(Status& status)
 	status = Status::STATUS_UNKNOWN;
 
 	auto getStatusCb = [this, &status]() {
-		char *saveptr;
+		char *token, *saveptr = this->m_buffer;
 
-		if (strncmp(m_buffer, "STATUS:", strlen("STATUS:")) == 0) {
-			// status
-			status = (Status)atoi(strtok_r(m_buffer + strlen("STATUS:"), "", &saveptr));
-		}
-
-		else if (strncmp(m_buffer, "+CIPSTATUS:", strlen("+CIPSTATUS:")) == 0) {
-			// link id
-			uint8_t linkId = atoi(strtok_r(m_buffer + strlen("+CIPSTATUS:"), ",", &saveptr));
-
-			if (linkId < NUM_CHANNELS) {
-				Channels& chn = m_channels[linkId];
-				char *pstart, *pend;
-
-				// TCP/UDP/SSL
-				chn.type = CHN_TYPE_UNKNOWN;
-				pstart = strtok_r(NULL, ",", &saveptr);
-				if ((pstart != NULL) && ((pstart = strchr(pstart, '"')) != NULL) && ((pend = strrchr(pstart, '"')) != NULL) && (pstart != pend)) {
-					pstart++;
-					*pend = 0;
-					if (strcmp("\"TCP\"", pstart) == 0)
-						chn.type = CHN_TYPE_TCP;
-					else if (strcmp("UDP", pstart) == 0)
-						chn.type = CHN_TYPE_UDP;
-					else if (strcmp("SSL", pstart) == 0)
-						chn.type = CHN_TYPE_SSL;
+		if ((token = strtok_r(saveptr, ":", &saveptr)) != NULL) {
+			if (strcmp(token, "STATUS") == 0) {
+				if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+					status = (Status)atoi(token);
 				}
+			}
 
-				// remote IP
-				memset(chn.remoteAddr, 0, IP_ADDRESS_SIZE);
-				pstart = strtok_r(NULL, ",", &saveptr);
-				if ((pstart != NULL) && ((pstart = strchr(pstart, '"')) != NULL) && ((pend = strrchr(pstart, '"')) != NULL) && (pstart != pend)) {
-					pstart++;
-					*pend = 0;
-					strncpy(chn.remoteAddr, pstart, IP_ADDRESS_SIZE - 1);
+			else if (strcmp(token, "+CIPSTATUS") == 0) {
+				// link ID
+				if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+					uint8_t linkId = (uint8_t)atoi(token);
+					if (linkId < NUM_CHANNELS) {
+						 m_channels[linkId].type = CHN_TYPE_UNKNOWN;
+						 m_channels[linkId].remoteAddr = 0;
+						 m_channels[linkId].remotePort = 0;
+						 m_channels[linkId].localPort = 0;
+
+						// TCP/UDP/SSL
+						if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+							if (strcmp(token, "\"TCP\"") == 0)
+								m_channels[linkId].type = CHN_TYPE_TCP;
+							else if (strcmp(token, "\"UDP\"") == 0)
+								m_channels[linkId].type = CHN_TYPE_UDP;
+							else if (strcmp(token, "\"SSL\"") == 0)
+								m_channels[linkId].type = CHN_TYPE_SSL;
+						}
+
+						// remote IP
+						if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+							char *saveptr = token;
+							for (size_t i = 0; i < 4 && ((token = strtok_r(saveptr, ".\"", &saveptr)) != NULL); i++)
+								m_channels[linkId].remoteAddr = (m_channels[linkId].remoteAddr << 8) | (uint8_t)atoi(token);
+						}
+
+						// remote port
+						if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+							m_channels[linkId].remotePort = (uint16_t)atoi(token);
+						}
+
+						// local port
+						if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+							m_channels[linkId].localPort = (uint16_t)atoi(token);
+						}
+					}
 				}
-
-				// remote port
-				chn.remotePort = 0;
-				pstart = strtok_r(NULL, ",", &saveptr);
-				if (pstart != NULL)
-					chn.remotePort = atoi(pstart);
-
-				// local port
-				chn.localPort = 0;
-				pstart = strtok_r(NULL, ",", &saveptr);
-				if (pstart != NULL)
-					chn.localPort = atoi(pstart);
 			}
 		}
 	};
@@ -654,29 +652,39 @@ msg_t ESP::ipDeleteServer()
 			"AT+CIPSERVER=0\r\n");
 }
 
-msg_t ESP::ipGetAddres(std::string& apIPAddr, std::string& apMACAddr, std::string& staIPAddr, std::string& staMACAddr)
+msg_t ESP::ipGetAddres(uint32_t& apIPAddr, uint8_t apMACAddr[6], uint32_t& staIPAddr, uint8_t staMACAddr[6])
 {
 	DEBUG_PRINT("");
 
-	auto getAddressCb = [this, &apIPAddr, &apMACAddr, &staIPAddr, &staMACAddr]() {
-		struct KeyValuePair {
-			const char *key;
-			std::string& value;
-		} pair[] = {
-				{ "+CIFSR:APIP", apIPAddr },
-				{ "+CIFSR:APMAC", apMACAddr },
-				{ "+CIFSR:STAIP", apIPAddr },
-				{ "+CIFSR:STAMAC", apMACAddr },
-		};
+	apIPAddr = 0;
+	staIPAddr = 0;
+	memset(apMACAddr, 0, 6);
+	memset(staMACAddr, 0, 6);
 
-		for (size_t i = 0; i < sizeof(pair) / sizeof(KeyValuePair); i++) {
-			if (strncmp(this->m_buffer, pair[i].key, strlen(pair[i].key)) == 0) {
-				char *saveptr = this->m_buffer + strlen(pair[i].key);
-				const char *pstart = strtok_r(saveptr, ",", &saveptr);
-				const char *pend;
-				if ((pstart != NULL) && ((pstart = strchr(pstart, '"')) != NULL) && ((pend = strrchr(pstart, '"')) != NULL) && (pstart != pend))
-					pair[i].value = std::string(++pstart, pend);
-				break;
+	auto getAddressCb = [this, &apIPAddr, apMACAddr, &staIPAddr, staMACAddr]() {
+		char *token, *saveptr = this->m_buffer;
+
+		if ((token = strtok_r(saveptr, ":", &saveptr)) != NULL && strcmp(token, "+CIFSR") == 0) {
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				if (strcmp(token, "STAIP") == 0) {
+					for (size_t i = 0; i < 4 && ((token = strtok_r(saveptr, ".\"", &saveptr)) != NULL); i++)
+						staIPAddr = (staIPAddr << 8) | (uint8_t)atoi(token);
+				}
+
+				else if (strcmp(token, "STAMAC") == 0) {
+					for (size_t i = 0; i < 6 && ((token = strtok_r(saveptr, ":\"", &saveptr)) != NULL); i++)
+						staMACAddr[i] = (uint8_t)strtol(token, NULL, 16);
+				}
+
+				else if (strcmp(token, "APIP") == 0) {
+					for (size_t i = 0; i < 4 && ((token = strtok_r(saveptr, ".\"", &saveptr)) != NULL); i++)
+						apIPAddr = (apIPAddr << 8) | (uint8_t)atoi(token);
+				}
+
+				else if (strcmp(token, "APMAC") == 0) {
+					for (size_t i = 0; i < 6 && ((token = strtok_r(saveptr, ":\"", &saveptr)) != NULL); i++)
+						apMACAddr[i] = (uint8_t)strtol(token, NULL, 16);
+				}
 			}
 		}
 	};

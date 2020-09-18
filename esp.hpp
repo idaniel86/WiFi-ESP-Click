@@ -53,10 +53,11 @@ public:
 	} UdpMode;
 
 	typedef enum {
-		CHN_TYPE_TCP = 0,
-		CHN_TYPE_UDP = 1,
-		CHN_TYPE_SSL = 2,
-		CHN_TYPE_UNKNOWN,
+		CHN_TYPE_UNKNOWN = 0,
+		CHN_TYPE_TCP,
+		CHN_TYPE_UDP,
+		CHN_TYPE_SSL,
+
 	} ChannelType;
 
 	enum : msg_t {
@@ -136,7 +137,7 @@ private:
 		input_queue_t iqueue;
 		uint8_t ibuffer[CHANNEL_BUFFERS_SIZE];
 		ChannelType type;
-		char remoteAddr[IP_ADDRESS_SIZE];
+		uint32_t remoteAddr;
 		uint16_t remotePort;
 		uint16_t localPort;
 	} Channels;
@@ -625,7 +626,7 @@ public:
 	 * @retval MSG_TIMEOUT	if the response @a RESP_TIMEOUT time expired.
 	 * @retval MSG_RESET	if the channel associated queue (if any) has been reset.
 	 */
-	msg_t ipGetAddres(std::string& apIPAddr, std::string& apMACAddr, std::string& staIPAddr, std::string& staMACAddr);
+	msg_t ipGetAddres(uint32_t& apIPAddr, uint8_t apMACAddr[6], uint32_t& staIPAddr, uint8_t staMACAddr[6]);
 
 	/**
 	 * @brief	Sets the maximum connections allowed by server.
