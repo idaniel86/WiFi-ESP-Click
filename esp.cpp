@@ -420,6 +420,29 @@ msg_t ESP::wifiSetMode(WifiMode mode, bool defaultCfg)
 			"AT+CWMODE_%s=%d\r\n", defaultCfg ? "DEF" : "CUR", mode);
 }
 
+msg_t ESP::wifiGetMode(WifiMode& mode, bool defaultCfg)
+{
+	DEBUG_PRINT("defaultCfg = %c", defaultCfg ? 'T' : 'F');
+
+	auto getGetModeCb = [this, &mode]() {
+		char *token, *saveptr = this->m_buffer;
+
+		if ((token = strtok_r(saveptr, ":", &saveptr)) != NULL && strncmp(token, "+CWMODE", strlen("+CWMODE")) == 0) {
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				mode = (WifiMode)atoi(token);
+			}
+		}
+	};
+
+	msg_t ret = command((1 << MSG_OK) | (1 << MSG_ERROR),
+			getGetModeCb, RESP_TIMEOUT,
+			"AT+CWMODE_%s?\r\n", defaultCfg ? "DEF" : "CUR");
+	if (ret == MSG_OK) {
+		DEBUG_PRINT("mode = %u", mode);
+	}
+	return ret;
+}
+
 msg_t ESP::wifiConnect(const char* ssid, const char* pwd, bool defaultCfg)
 {
 	osalDbgCheck((ssid != NULL) && (pwd != NULL));

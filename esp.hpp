@@ -334,6 +334,20 @@ public:
 	msg_t wifiSetMode(WifiMode mode, bool defaultCfg = false);
 
 	/**
+	 * @brief	Gets the WiFi mode.
+	 *
+	 * @param[out] mode			WiFi @p WifiMode mode
+	 * @param[in] defaultCfg	flag indicating if store configuration in Flash
+	 *
+	 * @return 				Operation result.
+	 * @retval MSG_OK		on success.
+	 * @retval MSG_ERROR	if an error occurred.
+	 * @retval MSG_TIMEOUT	if the response @a RESP_TIMEOUT time expired.
+	 * @retval MSG_RESET	if the channel associated queue (if any) has been reset.
+	 */
+	msg_t wifiGetMode(WifiMode& mode, bool defaultCfg = false);
+
+	/**
 	 * @brief	Connects to an access point.
 	 *
 	 * @param[in] ssid			the SSID of the target AP
