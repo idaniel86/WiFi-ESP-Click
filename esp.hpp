@@ -368,6 +368,23 @@ public:
 	msg_t wifiConnect(const char* ssid, const char* pwd, bool defaultCfg = false);
 
 	/**
+	 * @brief	Query the access point to which the station is already connected.
+	 *
+	 * @param[out] ssid			the SSID of the target AP
+	 * @param[out] bssid		MAC address of the AP
+	 * @param[out] chn			channel ID
+	 * @param[out] rssi			signal strength
+	 * @param[in] defaultCfg	flag indicating if store configuration in Flash
+	 *
+	 * @return 						Operation result.
+	 * @retval MSG_OK				on success.
+	 * @retval MSG_ERROR			if an error occurred.
+	 * @retval MSG_TIMEOUT			if the response @a CONNECT_TIMEOUT time expired.
+	 * @retval MSG_RESET			if the channel associated queue (if any) has been reset.
+	 */
+	msg_t wifiGetConnection(std::string& ssid, char bssid[6], uint8_t& chn, int& rssi, bool defaultCfg = false);
+
+	/**
 	 * @brief	Disconnects from the AP.
 	 *
 	 * @return 				Operation result.

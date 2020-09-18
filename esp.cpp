@@ -490,6 +490,57 @@ msg_t ESP::wifiConnect(const char* ssid, const char* pwd, bool defaultCfg)
 	return ret;
 }
 
+msg_t ESP::wifiGetConnection(std::string& ssid, char bssid[6], uint8_t& chn, int& rssi, bool defaultCfg)
+{
+	DEBUG_PRINT("defaultCfg = %c", defaultCfg ? 'T' : 'F');
+
+	ssid.clear();
+	memset(bssid, 0, 6);
+	chn = 0;
+	rssi = 0;
+
+	auto getStationConnectionCb = [this, &ssid, bssid, &chn, &rssi]() {
+		char *token, *saveptr = this->m_buffer;
+
+		if ((token = strtok_r(saveptr, ":", &saveptr)) != NULL && strncmp(token, "+CWJAP", strlen("+CWJAP")) == 0) {
+			// ssid
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				char *saveptr = token;
+				if ((token = strtok_r(saveptr, "\"", &saveptr)) != NULL) {
+					ssid = token;
+				}
+			}
+
+			// bssid
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				char *saveptr = token;
+				for (size_t i = 0; i < 6 && ((token = strtok_r(saveptr, ":\"", &saveptr)) != NULL); i++)
+					bssid[i] = (uint8_t)strtol(token, NULL, 16);
+			}
+
+			// channel
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				chn = (uint8_t)atoi(token);
+			}
+
+			// rssi
+			if ((token = strtok_r(saveptr, ",", &saveptr)) != NULL) {
+				rssi = atoi(token);
+			}
+		}
+	};
+
+	msg_t ret = command((1 << MSG_OK) | (1 << MSG_ERROR),
+			getStationConnectionCb, RESP_TIMEOUT,
+			"AT+CWJAP_%s?\r\n", defaultCfg ? "DEF" : "CUR");
+	if (ret == MSG_OK) {
+		DEBUG_PRINT("ssid = \"%s\", bssi = \"%02x:%02x:%02x:%02x:%02x:%02x\", chn = %u, rssi = %d",
+				ssid.c_str(), bssid[0], bssid[1], bssid[2], bssid[3], bssid[4], bssid[5], chn, rssi);
+	}
+
+	return ret;
+}
+
 msg_t ESP::wifiDisconnect()
 {
 	DEBUG_PRINT("");
